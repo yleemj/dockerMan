@@ -4,15 +4,16 @@ import (
     "errors"
     "fmt"
     "sync"
+    "github.com/Sirupsen/logrus"
 )
 
 var (
     ErrEngineNotConnected = errors.New("engine is not connected to docker's REST API")
+    logger                    = logrus.New()
 )
 
 type Cluster struct {
     mux sync.Mutex
-
     engines         map[string]*Engine
 }
 
@@ -124,6 +125,8 @@ func (c *Cluster) Start(image *Image, pull bool) (*Container, error) {
     }
 
 
+    logger.Infof("container name: %s, image name: %s",
+                 container.Name, container.Image.Name)
     // engine := c.engines[s.ID]
 
     for _, e := range c.engines {

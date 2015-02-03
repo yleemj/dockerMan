@@ -9,6 +9,7 @@ import (
     "github.com/samalba/dockerclient"
 )
 
+
 type Engine struct {
     ID     string   `json:"id,omitempty"`
     Addr   string   `json:"addr,omitempty"`
@@ -64,6 +65,9 @@ func (e *Engine) Start(c *Container, pullImage bool) error {
     )
     c.Engine = e
 
+
+    logger.Infof("client: %s", client)
+
     for k, v := range i.Environment {
         env = append(env, fmt.Sprintf("%s=%s", k, v))
     }
@@ -83,6 +87,7 @@ func (e *Engine) Start(c *Container, pullImage bool) error {
         }
         vols[v] = struct{}{}
     }
+
     config := &dockerclient.ContainerConfig{
         Hostname:     i.Hostname,
         Domainname:   i.Domainname,
@@ -131,6 +136,9 @@ func (e *Engine) Start(c *Container, pullImage bool) error {
             return err
         }
     }
+
+    logger.Infof("config: %s", config)
+
 
     if c.ID, err = client.CreateContainer(config, c.Name); err != nil {
         return err
