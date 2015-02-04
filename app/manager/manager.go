@@ -1,38 +1,38 @@
 package manager
 
 import (
-    "crypto/tls"
+	"crypto/tls"
 	"strings"
 	"sync"
 
 	"github.com/Sirupsen/logrus"
-	"gopkg.in/mgo.v2"
-    "gopkg.in/mgo.v2/bson"
 	"github.com/gorilla/sessions"
 	"github.com/yleemj/dockerMan"
-    "github.com/yleemj/dockerMan/app/cluster"
+	"github.com/yleemj/dockerMan/app/cluster"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 const (
-	tblNameConfig      = "config"
-	storeKey           = "dockerMan"
+	tblNameConfig = "config"
+	storeKey      = "dockerMan"
 	// trackerHost        = "http://tracker.shipyard-project.com"
-	EngineHealthUp     = "up"
-	EngineHealthDown   = "down"
+	EngineHealthUp   = "up"
+	EngineHealthDown = "down"
 )
 
 var (
-	logger                    = logrus.New()
-	store                     = sessions.NewCookieStore([]byte(storeKey))
+	logger = logrus.New()
+	store  = sessions.NewCookieStore([]byte(storeKey))
 )
 
 type (
 	Manager struct {
 		address          string
 		database         string
-		collection         string
+		collection       string
 		session          *mgo.Session
-        mgoDB            *mgo.Database
+		mgoDB            *mgo.Database
 		clusterManager   *cluster.Cluster
 		engines          []*dockerMan.Engine
 		store            *sessions.CookieStore
@@ -44,15 +44,15 @@ type (
 
 func NewManager(addr string, database string, version string, disableUsageInfo bool) (*Manager, error) {
 	session, err := mgo.Dial(addr)
-    if err != nil {
-            panic(err)
-    }
-    defer session.Close()
+	if err != nil {
+		panic(err)
+	}
+	defer session.Close()
 
-    db := session.DB(database)
+	db := session.DB(database)
 
 	logger.Info("checking database")
-    logger.Info("database: %s", db)
+	logger.Info("database: %s", db)
 
 	//r.DbCreate(database).Run(session)
 
@@ -60,7 +60,7 @@ func NewManager(addr string, database string, version string, disableUsageInfo b
 		address:          addr,
 		database:         database,
 		session:          session,
-        mgoDB:            db,
+		mgoDB:            db,
 		store:            store,
 		StoreKey:         storeKey,
 		version:          version,
@@ -71,46 +71,50 @@ func NewManager(addr string, database string, version string, disableUsageInfo b
 }
 
 func (m *Manager) ClusterManager() *cluster.Cluster {
-    return m.clusterManager
+	return m.clusterManager
 }
-
 
 func (m *Manager) Store() *sessions.CookieStore {
 	return m.store
 }
 
-
 func (m *Manager) init() []*dockerMan.Engine {
 	engines := []*dockerMan.Engine{}
-    err := m.mgoDB.C(tblNameConfig).Find(bson.M{}).All(&engines)
+	err := m.mgoDB.C(tblNameConfig).Find(bson.M{}).All(&engines)
 	if err != nil {
 		logger.Fatalf("error getting configuration: %s", err)
 	}
 
-    logger.Infof("engines: %s", engines)
+	logger.Infof("engines: %s", engines)
 
 	m.engines = engines
 
-    var engs []*cluster.Engine
-    for _, d := range engines {
-        tlsConfig := &tls.Config{}
-        if err := setEngineClient(d.Engine, tlsConfig); err != nil {
-            logger.Errorf("error setting tls config for engine: %s", err)
-        }
-        engs = append(engs, d.Engine)
-        logger.Infof("loaded engine id=%s addr=%s", d.Engine.ID, d.Engine.Addr)
-    }
+	var engs []*cluster.Engine
+	for _, d := range engines {
+		stat, err := d.Ping()
+		if err != nil {
+			logger.Warnf("unable to ping engine: %s", err)
+		} else if stat != 200 {
+			logger.Warnf("ping engine: status %d", stat)
+		} else {
+			tlsConfig := &tls.Config{}
+			if err := setEngineClient(d.Engine, tlsConfig); err != nil {
+				logger.Errorf("error setting tls config for engine: %s", err)
+			}
+			engs = append(engs, d.Engine)
+			logger.Infof("loaded engine id=%s addr=%s", d.Engine.ID, d.Engine.Addr)
+		}
+	}
 
-    clusterManager, err := cluster.New(engs...)
-    if err != nil {
-        logger.Fatal(err)
-    }
+	clusterManager, err := cluster.New(engs...)
+	if err != nil {
+		logger.Fatal(err)
+	}
 
-    m.clusterManager = clusterManager
+	m.clusterManager = clusterManager
 
 	return engines
 }
-
 
 func (m *Manager) Engines() []*dockerMan.Engine {
 	return m.engines
@@ -134,7 +138,6 @@ func (m *Manager) Container(id string) (*cluster.Container, error) {
 	}
 	return nil, nil
 }
-
 
 func (m *Manager) Containers(all bool) []*cluster.Container {
 	return m.clusterManager.ListContainers(all, false, "")
@@ -182,12 +185,11 @@ func (m *Manager) Destroy(container *cluster.Container) error {
 	return nil
 }
 
-
 func (m *Manager) Run(image *cluster.Image, count int, pull bool) ([]*cluster.Container, error) {
 	launched := []*cluster.Container{}
 
-    logger.Infof("Run Image: %s", image.Name)
-    logger.Infof("count: %d", count)
+	logger.Infof("Run Image: %s", image.Name)
+	logger.Infof("count: %d", count)
 
 	var wg sync.WaitGroup
 	wg.Add(count)
