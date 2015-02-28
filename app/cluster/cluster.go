@@ -13,13 +13,15 @@ var (
 )
 
 type Cluster struct {
-	mux     sync.Mutex
-	engines map[string]*Engine
+	mux             sync.Mutex
+	engines         map[string]*Engine
+	resourceManager ResourceManager
 }
 
-func New(engines ...*Engine) (*Cluster, error) {
+func New(manager ResourceManager, engines ...*Engine) (*Cluster, error) {
 	c := &Cluster{
-		engines: make(map[string]*Engine),
+		engines:         make(map[string]*Engine),
+		resourceManager: manager,
 	}
 
 	for _, e := range engines {
@@ -116,6 +118,33 @@ func (c *Cluster) Start(image *Image, pull bool) (*Container, error) {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 
+	var engineResources = []*EngineSnapshot{}
+
+	for _, e := range c.engines {
+		logger.Infof("engine %s is connected: %b", e.ID, e.IsConnected())
+		containers, err := e.ListContainers(false, false, "")
+		if err != nil {
+			return nil, err
+		}
+		var cpus, memory float64
+		for _, con := range containers {
+			cpus += con.Image.Cpus
+			memory += con.Image.Memory
+		}
+
+		engineResources = append(engineResources, &EngineSnapshot{
+			ID:             e.ID,
+			ReservedCpus:   cpus,
+			ReservedMemory: memory,
+			Cpus:           e.Cpus,
+			Memory:         e.Memory,
+		})
+	}
+
+	if len(engineResources) == 0 {
+		return nil, fmt.Errorf("no eligible engines to run image")
+	}
+
 	container := &Container{
 		Image: image,
 		Name:  image.ContainerName,
@@ -124,12 +153,15 @@ func (c *Cluster) Start(image *Image, pull bool) (*Container, error) {
 	logger.Infof("container name: %s, image name: %s",
 		container.Name, container.Image.Name)
 
-	for _, e := range c.engines {
-		logger.Infof("engine %s is connected: %b", e.ID, e.IsConnected())
-		if err := e.Start(container, pull); err != nil {
-			return nil, err
-		}
-		break
+	s, err := c.resourceManager.PlaceContainer(container, engineResources)
+	if err != nil {
+		return nil, err
+	}
+
+	engine := c.engines[s.ID]
+
+	if err := engine.Start(container, pull); err != nil {
+		return nil, err
 	}
 
 	return container, nil

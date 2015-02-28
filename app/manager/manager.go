@@ -106,7 +106,7 @@ func (m *Manager) init() []*dockerMan.Engine {
 		}
 	}
 
-	clusterManager, err := cluster.New(engs...)
+	clusterManager, err := cluster.New(cluster.NewResourceManager(), engs...)
 	if err != nil {
 		logger.Fatal(err)
 	}
