@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	//"github.com/Sirupsen/logrus"
 )
 
 // ResourceManager is responsible for managing the engines of the cluster
@@ -11,6 +12,10 @@ type ResourceManager struct {
 func NewResourceManager() *ResourceManager {
 	return &ResourceManager{}
 }
+
+//var (
+//logger = logrus.New()
+//)
 
 // PlaceImage uses the provided engines to make a decision on which resource the container
 // should run based on best utilization of the engines.
@@ -29,6 +34,10 @@ func (r *ResourceManager) PlaceContainer(c *Container,
 			total       = ((cpuScore + memoryScore) / 200.0) * 100.0
 		)
 
+		logger.Infof("engine ID: %s", e.ID)
+		logger.Infof("used cpus: %f, total cpus: %f, image cpus: %f", e.ReservedCpus, e.Cpus, c.Image.Cpus)
+		logger.Infof("used memory: %f, total memory: %f, image memory: %f", e.ReservedMemory, e.Memory, c.Image.Memory)
+
 		if cpuScore < 100 && memoryScore < 100 {
 			scores = append(scores, &score{r: e, score: total})
 		}
@@ -39,7 +48,11 @@ func (r *ResourceManager) PlaceContainer(c *Container,
 	}
 
 	sortScores(scores)
-	fmt.Println(scores)
+	bestScore := scores[0]
+	logger.Infof("use engine: %v, score: %v\n", bestScore.r.ID, bestScore.score)
+	for _, s := range scores {
+		logger.Infof("  engine: %v, score: %v\n", s.r.ID, s.score)
+	}
 
-	return scores[0].r, nil
+	return bestScore.r, nil
 }

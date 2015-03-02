@@ -15,10 +15,10 @@ var (
 type Cluster struct {
 	mux             sync.Mutex
 	engines         map[string]*Engine
-	resourceManager ResourceManager
+	resourceManager *ResourceManager
 }
 
-func New(manager ResourceManager, engines ...*Engine) (*Cluster, error) {
+func New(manager *ResourceManager, engines ...*Engine) (*Cluster, error) {
 	c := &Cluster{
 		engines:         make(map[string]*Engine),
 		resourceManager: manager,

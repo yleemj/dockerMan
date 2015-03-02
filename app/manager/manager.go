@@ -188,8 +188,7 @@ func (m *Manager) Destroy(container *cluster.Container) error {
 func (m *Manager) Run(image *cluster.Image, count int, pull bool) ([]*cluster.Container, error) {
 	launched := []*cluster.Container{}
 
-	logger.Infof("Run Image: %s", image.Name)
-	logger.Infof("count: %d", count)
+	logger.Infof("Run Image: %s, count: %d", image.Name, count)
 
 	var wg sync.WaitGroup
 	wg.Add(count)
