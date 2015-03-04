@@ -37,8 +37,9 @@ func (r *ResourceManager) PlaceContainer(c *Container,
 		logger.Infof("engine ID: %s", e.ID)
 		logger.Infof("used cpus: %f, total cpus: %f, image cpus: %f", e.ReservedCpus, e.Cpus, c.Image.Cpus)
 		logger.Infof("used memory: %f, total memory: %f, image memory: %f", e.ReservedMemory, e.Memory, c.Image.Memory)
+		logger.Infof("memory score: %f, cpu score: %f, total score: %f", memoryScore, cpuScore, total)
 
-		if cpuScore < 100 && memoryScore < 100 {
+		if cpuScore <= 100 && memoryScore <= 100 {
 			scores = append(scores, &score{r: e, score: total})
 		}
 	}

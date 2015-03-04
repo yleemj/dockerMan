@@ -12,14 +12,14 @@ import (
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
-    "github.com/yleemj/dockerMan/app/cluster"
+	"github.com/yleemj/dockerMan/app/cluster"
 	"github.com/yleemj/dockerMan/app/manager"
 )
 
 var (
 	listenAddr        string
-	mongodbAddr     string
-	mongodbDatabase string
+	mongodbAddr       string
+	mongodbDatabase   string
 	disableUsageInfo  bool
 	showVersion       bool
 	controllerManager *manager.Manager
@@ -28,9 +28,8 @@ var (
 
 const (
 	STORE_KEY = "dockerMan"
-    VERSION = "0.0.1"
+	VERSION   = "0.0.1"
 )
-
 
 func init() {
 	flag.StringVar(&listenAddr, "listen", ":8080", "listen address")
@@ -124,7 +123,6 @@ func stopContainer(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-
 func restartContainer(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -201,9 +199,9 @@ func clusterInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	mHost := os.Getenv("MONGODB_PORT_28015_TCP_ADDR")
-	mPort := os.Getenv("MONGODB_PORT_28015_TCP_PORT")
-	mDb := os.Getenv("MONGODB_DATABASE")
+	mHost := os.Getenv("MONGO_PORT_27017_TCP_ADDR")
+	mPort := os.Getenv("MONGO_PORT_27017_TCP_PORT")
+	mDb := os.Getenv("MONGO_DATABASE")
 
 	if mHost != "" && mPort != "" {
 		mongodbAddr = fmt.Sprintf("%s:%s", mHost, mPort)
@@ -211,7 +209,6 @@ func main() {
 	if mDb != "" {
 		mongodbDatabase = mDb
 	}
-
 
 	flag.Parse()
 	if showVersion {
@@ -253,7 +250,6 @@ func main() {
 	//apiAuthRouter.Use(negroni.HandlerFunc(apiAccessRequired.HandlerFuncWithNext))
 	apiAuthRouter.UseHandler(apiRouter)
 	globalMux.Handle("/api/", apiAuthRouter)
-
 
 	if err := http.ListenAndServe(listenAddr, context.ClearHandler(globalMux)); err != nil {
 		logger.Fatal(err)
