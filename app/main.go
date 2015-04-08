@@ -205,7 +205,10 @@ func main() {
 
 	if mHost != "" && mPort != "" {
 		mongodbAddr = fmt.Sprintf("%s:%s", mHost, mPort)
+		fmt.Printf("mongo addr config: %s:%s", mHost, mPort)
 	}
+
+	fmt.Println("mongodb addr is " + mongodbAddr)
 	if mDb != "" {
 		mongodbDatabase = mDb
 	}
