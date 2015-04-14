@@ -219,7 +219,7 @@ func (e *Engine) Restart(container *Container, timeout int) error {
 }
 
 func (e *Engine) Remove(container *Container) error {
-	return e.client.RemoveContainer(container.ID, true)
+	return e.client.RemoveContainer(container.ID, true, true)
 }
 
 func (e *Engine) Version() (*dockerclient.Version, error) {
